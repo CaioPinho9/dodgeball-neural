@@ -8,6 +8,7 @@ public class Player : MonoBehaviour
     [Header("Control")]
     public float rotate;
     public float accelerate;
+    public float lateral;
     public bool shot;
     public float force = 5;
 
@@ -56,7 +57,8 @@ public class Player : MonoBehaviour
         if (!gameOver)
         {
             accelerate = Input.GetAxis("Vertical");
-            rotate = Input.GetAxis("Horizontal");
+            lateral = Input.GetAxis("Horizontal");
+            rotate = (Input.GetKey(KeyCode.Q) ? -1 : 0) + (Input.GetKey(KeyCode.E) ? 1 : 0);
             shot = Input.GetMouseButton(0);
 
             //Timer
@@ -82,6 +84,7 @@ public class Player : MonoBehaviour
     {
         //Move
         transform.position += 20f * accelerate * Time.deltaTime * transform.right;
+        transform.position += 20f * lateral * Time.deltaTime * -transform.up;
     }
 
     private void Rotate()
@@ -100,11 +103,13 @@ public class Player : MonoBehaviour
         {
             holdingBall = 0;
             Transform ball = transform.GetChild(0).transform;
+            ball.GetComponent<Animator>().SetInteger("holding", 0);
             ball.eulerAngles = transform.eulerAngles;
             ball.GetComponent<Ball>().power = 3;
             ball.GetComponent<Ball>().speed = force;
             ball.GetComponent<Ball>().shooter = transform.gameObject;
             ball.GetComponent<CircleCollider2D>().enabled = true;
+            ball.GetComponent<Animator>().SetInteger("power", 3);
             ball.parent = null;
         }
     }
@@ -122,6 +127,7 @@ public class Player : MonoBehaviour
                 ball.localPosition = new(1.5f, 0, 0);
                 ball.GetComponent<Ball>().team = team;
                 holdingBall = 1;
+                ball.GetComponent<Animator>().SetInteger("holding", 1);
             }
             else if (ball.GetComponent<Ball>().team != team)
             {

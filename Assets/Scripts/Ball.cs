@@ -29,6 +29,7 @@ public class Ball : MonoBehaviour
         if (!(collision.collider.CompareTag("Player") && team == collision.collider.GetComponent<Player>().team && power == 3))
         {
             power -= 1;
+            GetComponent<Animator>().SetInteger("power", power);
             speed *= .8f;
             Vector3 collisionPoint = collision.GetContact(0).point;
             if (Utils.Distance(collisionPoint.x, 0, transform.position.x, 0) < Utils.Distance(0, collisionPoint.y, 0, transform.position.y))
