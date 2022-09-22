@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 4816225661054312771}
   - component: {fileID: 8975242792092083837}
   - component: {fileID: 883358611858186714}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Ball
   m_TagString: Ball
   m_Icon: {fileID: 0}
@@ -138,10 +138,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   speed: 0
-  hold: 0
   power: 0
-  team: 0
-  shooter: {fileID: 0}
+  hold: 0
+  gameOver: 0
+  team: -1
+  shooter: {fileID: 1914832471779198886, guid: 4a1652fb35519cf47ada26cd565bf366, type: 3}
 --- !u!95 &883358611858186714
 Animator:
   serializedVersion: 4

@@ -9,9 +9,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7238395077343731149}
+  - component: {fileID: 4340515821798182203}
   - component: {fileID: -4410958740876744150}
   - component: {fileID: 1528657017722382262}
-  - component: {fileID: 4340515821798182203}
   - component: {fileID: 8895371360887818689}
   m_Layer: 0
   m_Name: Player2
@@ -35,6 +35,40 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &4340515821798182203
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1914832471779198886}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6f866ef3e1a41ea4d89806afad73085e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  rotate: 0
+  accelerate: 0
+  lateral: 0
+  shot: 0
+  force: 5
+  xBallDistance: 0
+  yBallDistance: 0
+  power: 0
+  holdingBall: 0
+  xEnemyDistance: 0
+  yEnemyDistance: 0
+  speed: 2
+  degrees: 0
+  angle: 0
+  gameOver: 0
+  score: 0
+  id: 1
+  dna: 
+  rna: 
+  team: 1
+  time: 0
+  queueTime: 0.1
 --- !u!58 &-4410958740876744150
 CircleCollider2D:
   m_ObjectHideFlags: 0
@@ -103,32 +137,6 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
---- !u!114 &4340515821798182203
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1914832471779198886}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6f866ef3e1a41ea4d89806afad73085e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  rotate: 0
-  accelerate: 0
-  shot: 0
-  speed: 2
-  degrees: 0
-  angle: 0
-  holdingBall: 1
-  gameOver: 0
-  score: 0
-  id: 0
-  dna: 
-  rna: 
-  time: 0
-  queueTime: 0.1
 --- !u!50 &8895371360887818689
 Rigidbody2D:
   serializedVersion: 4

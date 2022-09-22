@@ -1,26 +1,32 @@
-using System.Collections;
-using System.Collections.Generic;
-using Unity.VisualScripting;
 using UnityEngine;
 
 public class Player : MonoBehaviour
-{//Control
+{   
     [Header("Control")]
     public float rotate;
     public float accelerate;
     public float lateral;
-    public bool shot;
+    public float shot;
     public float force = 5;
 
-    //Movement
+    [Header("Ball")]
+    public float xBallDistance;
+    public float yBallDistance;
+    public int power;
+    public float holdingBall = 0;
+    private Ball ball;
+
+    [Header("Enemy")]
+    public float xEnemyDistance;
+    public float yEnemyDistance;
+    private Player enemy;
+
     [Header("Movement")]
     public float speed = 2f;
     public float degrees = 0;
     public float angle;
 
     [Header("Gameplay")]
-    //Gameplay
-    public float holdingBall = 0;
     public bool gameOver = false;
     public float score = 0;
 
@@ -31,23 +37,38 @@ public class Player : MonoBehaviour
     public int team;
 
     [Header("Timer")]
-    //Timer
     public float time;
     public float queueTime = .1f;
 
     //References
     //public NeuralNetwork network;
     private Rigidbody2D rb;
+    private GameController gameController;
 
     // Start is called before the first frame update
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
+        gameController = transform.parent.GetComponent<GameController>();
+        gameController.Start();
+        ball = gameController.ball;
+        enemy = gameController.players[team == 0 ? 1 : 0];
         degrees = transform.eulerAngles.z;
         //Create the neural network
         //network = new();
+
         //Don't rotate without a command
         rb.freezeRotation = true;
+    }
+
+    public void Restart()
+    {
+        //Position and degrees are different in each team
+        transform.localPosition = new(2.5f * (team == 0 ? 1 : -1), 0, 0);
+        degrees = team == 0 ? 180 : 0;
+        gameOver = false;
+        holdingBall = 0;
+        score = 0;
     }
 
     // Update is called once per frame
@@ -56,14 +77,20 @@ public class Player : MonoBehaviour
         //Until losing
         if (!gameOver)
         {
-            accelerate = Input.GetAxis("Vertical");
-            lateral = Input.GetAxis("Horizontal");
-            rotate = (Input.GetKey(KeyCode.Q) ? -1 : 0) + (Input.GetKey(KeyCode.E) ? 1 : 0);
-            shot = Input.GetMouseButton(0);
+            //Check if losing
+            gameOver = gameController.gameOver;
+
+            if (gameController.manual)
+            {
+                ManualInput();
+            }
 
             //Timer
             if (time > queueTime)
             {
+                BallDistance();
+                EnemyDistance();
+
                 Fire();
                 //Change angle
                 Rotate();
@@ -74,23 +101,59 @@ public class Player : MonoBehaviour
             }
             //Increases time and score
             time += Time.deltaTime;
-
-            //Animate
-            //Animate(speed, horizontal);
         }
+    }
+
+    private void ManualInput()
+    {
+        if (team == 0)
+        {
+            //Blue
+            accelerate = (Input.GetKey(KeyCode.UpArrow) ? 1 : 0) + (Input.GetKey(KeyCode.DownArrow) ? -1 : 0);
+            lateral = (Input.GetKey(KeyCode.LeftArrow) ? 1 : 0) + (Input.GetKey(KeyCode.RightArrow) ? -1 : 0);
+            rotate = (Input.GetKey(KeyCode.Comma) ? 1 : 0) + (Input.GetKey(KeyCode.Period) ? -1 : 0);
+            shot = Input.GetKey(KeyCode.M) ? 1 : 0;
+        }
+        else
+        {
+            //Orange
+            accelerate = (Input.GetKey(KeyCode.W) ? 1 : 0) + (Input.GetKey(KeyCode.S) ? -1 : 0);
+            lateral = (Input.GetKey(KeyCode.A) ? 1 : 0) + (Input.GetKey(KeyCode.D) ? -1 : 0);
+            rotate = (Input.GetKey(KeyCode.Q) ? 1 : 0) + (Input.GetKey(KeyCode.E) ? -1 : 0);
+            shot = Input.GetKey(KeyCode.Space) ? 1 : 0;
+        }
+    }
+
+    private void BallDistance()
+    {
+        xBallDistance = ball.transform.position.x - transform.position.x;
+        yBallDistance = ball.transform.position.y - transform.position.y;
+        power = ball.power;
+    }
+
+    private void EnemyDistance()
+    {
+        xEnemyDistance = enemy.transform.position.x - transform.position.x;
+        yEnemyDistance = enemy.transform.position.y - transform.position.y;
     }
 
     private void Move()
     {
         //Move
         transform.position += 20f * accelerate * Time.deltaTime * transform.right;
-        transform.position += 20f * lateral * Time.deltaTime * -transform.up;
+        transform.position += 20f * lateral * Time.deltaTime * transform.up;
+        
+        //Ball fixed
+        if (transform.childCount > 0)
+        {
+            transform.GetChild(0).localPosition = new(1.5f, 0, 0);
+        }
     }
 
     private void Rotate()
     {
         //Increasing the input
-        degrees += rotate * -20f;
+        degrees += rotate * 20f;
 
         //Change angle of plane
         transform.eulerAngles = new(0f, 0f, degrees);
@@ -98,39 +161,64 @@ public class Player : MonoBehaviour
 
     private void Fire()
     {
-        //Manual and automatic input, shot when recharged
-        if (shot && holdingBall == 1)
+        //Shot when holding
+        if (shot == 1 && holdingBall == 1)
         {
             holdingBall = 0;
-            Transform ball = transform.GetChild(0).transform;
-            ball.GetComponent<Animator>().SetInteger("holding", 0);
-            ball.eulerAngles = transform.eulerAngles;
-            ball.GetComponent<Ball>().power = 3;
-            ball.GetComponent<Ball>().speed = force;
-            ball.GetComponent<Ball>().shooter = transform.gameObject;
-            ball.GetComponent<CircleCollider2D>().enabled = true;
-            ball.GetComponent<Animator>().SetInteger("power", 3);
-            ball.parent = null;
+
+            //Limit force
+            if (force >= 10)
+            {
+                force = 10;
+            }
+
+            //Set directon
+            ball.transform.eulerAngles = transform.eulerAngles;
+            
+            //When power is bigger than 1, it scores if hits the enemy
+            ball.power = 3;
+            ball.speed = force;
+
+            //Send this player to ball
+            ball.shooter = transform.gameObject;
+
+            //Remove ball from player
+            ball.transform.parent = transform.parent;
+
+            //Enable collider and animate
+            ball.transform.GetComponent<CircleCollider2D>().enabled = true;
+            ball.transform.GetComponent<Animator>().SetInteger("holding", 0);
+            ball.transform.GetComponent<Animator>().SetInteger("power", 3);
         }
     }
 
     private void OnCollisionEnter2D(Collision2D collision)
     {
-        Transform ball = collision.transform;
-        if (ball.CompareTag("Ball"))
+        if (collision.transform.CompareTag("Ball"))
         {
-            if (ball.GetComponent<Ball>().power <= 0)
+            //Power greater than 0 is impossible to hold
+            if (ball.power <= 0)
             {
-                ball.GetComponent<CircleCollider2D>().enabled = false;
-                ball.parent = transform;
-                ball.GetComponent<Ball>().speed = 0;
-                ball.localPosition = new(1.5f, 0, 0);
-                ball.GetComponent<Ball>().team = team;
+                //Disable collider
+                ball.transform.GetComponent<CircleCollider2D>().enabled = false;
+
+                //Stops the ball
+                ball.speed = 0;
+
+                //Holds the ball
+                ball.transform.parent = transform;
+                ball.transform.localPosition = new(1.5f, 0, 0);
                 holdingBall = 1;
-                ball.GetComponent<Animator>().SetInteger("holding", 1);
+
+                //Which team is holding
+                ball.team = team;
+
+                //Animate
+                ball.transform.GetComponent<Animator>().SetInteger("holding", 1);
             }
-            else if (ball.GetComponent<Ball>().team != team)
+            else if (ball.team != team)
             {
+                //If player is hit when power is greater than 0, the scores decreases
                 score -= 1;
             }
         }
