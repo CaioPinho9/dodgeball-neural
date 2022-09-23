@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 
 public class GameController : MonoBehaviour
@@ -19,7 +20,7 @@ public class GameController : MonoBehaviour
     private SpriteRenderer sp;
 
     // Start is called before the first frame update
-    public void Start()
+    public void Awake()
     {
         sp = transform.GetChild(0).GetComponent<SpriteRenderer>();
         ball = GetComponentInChildren<Ball>();
@@ -66,5 +67,7 @@ public class GameController : MonoBehaviour
         }
         ball.transform.parent = transform;
         ball.Restart();
+        transform.Find("Canvas").Find("Orange").GetComponent<TMP_Text>().text = "0";
+        transform.Find("Canvas").Find("Blue").GetComponent<TMP_Text>().text = "0";
     }
 }

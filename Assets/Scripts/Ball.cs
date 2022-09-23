@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEditor.Timeline.Actions;
 using UnityEngine;
 
@@ -48,8 +49,10 @@ public class Ball : MonoBehaviour
             transform.position += speed * Time.deltaTime * transform.right;
         }
 
+        //Check if ball is not inside the field
         if (!gameController.GetComponentInChildren<BoxCollider>().bounds.Contains(transform.position))
         {
+            //Return to the field
             transform.localPosition = Vector3.zero;
         }
     }
@@ -58,9 +61,12 @@ public class Ball : MonoBehaviour
     {
         if (!gameOver && !(collision.collider.CompareTag("Player") && team == collision.collider.GetComponent<Player>().team && power == 3))
         {
+            //Reduce power when collide
             power -= 1;
             anim.SetInteger("power", power);
             speed *= .8f;
+
+            //Check if the collision is vertical or horizontal
             Vector3 collisionPoint = collision.GetContact(0).point;
             if (Utils.Distance(collisionPoint.x, 0, transform.position.x, 0) < Utils.Distance(0, collisionPoint.y, 0, transform.position.y))
             {
@@ -74,13 +80,16 @@ public class Ball : MonoBehaviour
             if (collision.collider.CompareTag("Player") && team != collision.collider.GetComponent<Player>().team && power >= 1)
             {
                 shooter.GetComponent<Player>().score++;
+                Transform canvas = transform.parent.Find("Canvas");
                 if (collision.collider.GetComponent<Player>().team == 0)
                 {
                     gameController.orangeScore++;
+                    canvas.Find("Orange").GetComponent<TMP_Text>().text = gameController.orangeScore.ToString();
                 }
                 else
                 {
                     gameController.blueScore++;
+                    canvas.Find("Blue").GetComponent<TMP_Text>().text = gameController.blueScore.ToString();
                 }
             }
         }

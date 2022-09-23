@@ -50,7 +50,6 @@ public class Player : MonoBehaviour
     {
         rb = GetComponent<Rigidbody2D>();
         gameController = transform.parent.GetComponent<GameController>();
-        gameController.Start();
         ball = gameController.ball;
         enemy = gameController.players[team == 0 ? 1 : 0];
         degrees = transform.eulerAngles.z;
