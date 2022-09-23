@@ -282,7 +282,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3123167211524934469, guid: 2f1cf9164be730f49857426e53bf46a4, type: 3}
       propertyPath: gameAmount
-      value: 1
+      value: 300
       objectReference: {fileID: 0}
     - target: {fileID: 3123167211524934490, guid: 2f1cf9164be730f49857426e53bf46a4, type: 3}
       propertyPath: m_Name

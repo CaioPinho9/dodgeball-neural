@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class Player : MonoBehaviour
@@ -14,7 +15,7 @@ public class Player : MonoBehaviour
     public float xBallDistance;
     public float yBallDistance;
     public float zBallAngle;
-    public int power;
+    public float power;
     public float holdingBall = 0;
     private Ball ball;
 
@@ -45,7 +46,7 @@ public class Player : MonoBehaviour
     public float queueTime = .1f;
 
     //References
-    //public NeuralNetwork network;
+    public NeuralNetwork network;
     private Rigidbody2D rb;
     private GameController gameController;
 
@@ -57,8 +58,9 @@ public class Player : MonoBehaviour
         ball = gameController.ball;
         enemy = gameController.players[team == 0 ? 1 : 0];
         degrees = transform.eulerAngles.z;
+        NeuralInput();
         //Create the neural network
-        //network = new();
+        network = new();
 
         //Don't rotate without a command
         rb.freezeRotation = true;
@@ -91,9 +93,12 @@ public class Player : MonoBehaviour
             //Timer
             if (time > queueTime)
             {
+                Outside();
+
                 BallDistance();
                 EnemyDistance();
 
+                RunNetwork();
 
                 Fire();
                 //Change angle
@@ -105,6 +110,30 @@ public class Player : MonoBehaviour
             }
             //Increases time and score
             time += Time.deltaTime;
+        }
+    }
+
+    private void Outside()
+    {
+        if (!gameController.GetComponentInChildren<BoxCollider>().bounds.Contains(transform.position))
+        {
+            //Return to the field
+            transform.localPosition = new(2.5f * (team == 0 ? 1 : -1), 0, 0);
+            score--;
+        }
+
+        if (team == 0 && transform.position.x < 0)
+        {
+            //Return to the field
+            transform.localPosition = new(2.5f * (team == 0 ? 1 : -1), 0, 0);
+            score--;
+        }
+
+        if (team == 1 && transform.position.x > 0)
+        {
+            //Return to the field
+            transform.localPosition = new(2.5f * (team == 0 ? 1 : -1), 0, 0);
+            score--;
         }
     }
 
@@ -150,6 +179,15 @@ public class Player : MonoBehaviour
         return input;
     }
 
+    private void RunNetwork()
+    {
+        List<float> output = network.RunNetwork(NeuralInput());
+        accelerate = (output[0] > 0 ? 1 : 0) + (output[1] > 0 ? -1 : 0);
+        lateral = (output[2] > 0 ? 1 : 0) + (output[3] > 0 ? -1 : 0);
+        rotate = (output[4] > 0 ? 1 : 0) + (output[5] > 0 ? -1 : 0);
+        shot = output[6] > 0 ? 1 : 0;
+    }
+
     private void BallDistance()
     {
         if (holdingBall == 1)
@@ -176,8 +214,8 @@ public class Player : MonoBehaviour
     private void Move()
     {
         //Move
-        transform.position += 20f * accelerate * Time.deltaTime * transform.right;
-        transform.position += 20f * lateral * Time.deltaTime * transform.up;
+        transform.position += 10f * accelerate * Time.deltaTime * transform.right;
+        transform.position += 10f * lateral * Time.deltaTime * transform.up;
         
         //Ball fixed
         if (transform.childCount > 0)
