@@ -14,16 +14,30 @@ public class Controller : MonoBehaviour
 
     [Header("Config Neural Network")]
     //Neural Setting
-    public static int[] neuronsLayer = { 20, 7, 7 };
+    public int[] neuronsLayerDebug = { 0, 7, 7 };
     //Max value of weights and bias
-    public static int weightLimit = 500;
+    public int weightLimitDebug = 500;
     //Max value of mutation
-    public static int mutate = 1;
-    public static float learningRate = .1f;
+    public int mutateDebug = 1;
+    public float learningRateDebug = .1f;
+
+    //Neural Setting
+    public static int[] neuronsLayer;
+    //Max value of weights and bias
+    public static int weightLimit;
+    //Max value of mutation
+    public static int mutate;
+    public static float learningRate;
 
     // Start is called before the first frame update
     void Start()
     {
+        //Debug
+        neuronsLayer = neuronsLayerDebug;
+        weightLimit = weightLimitDebug;
+        mutate = mutateDebug;
+        learningRate = learningRateDebug;
+
         //Calculate the size of the game matrix
         int[] gameDimensions = GameAmount();
         int gameHeight = gameDimensions[0];
@@ -75,6 +89,12 @@ public class Controller : MonoBehaviour
         //Check if gameAmount was changed
         if (restart)
         {
+            //Debug
+            neuronsLayer = neuronsLayerDebug;
+            weightLimit = weightLimitDebug;
+            mutate = mutateDebug;
+            learningRate = learningRateDebug;
+
             //Destroy and recreate games
             foreach (GameObject game in GameObject.FindGameObjectsWithTag("Game"))
             {

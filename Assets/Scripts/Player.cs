@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 public class Player : MonoBehaviour
@@ -12,6 +13,7 @@ public class Player : MonoBehaviour
     [Header("Ball")]
     public float xBallDistance;
     public float yBallDistance;
+    public float zBallAngle;
     public int power;
     public float holdingBall = 0;
     private Ball ball;
@@ -19,6 +21,7 @@ public class Player : MonoBehaviour
     [Header("Enemy")]
     public float xEnemyDistance;
     public float yEnemyDistance;
+    public float zEnemyAngle;
     private Player enemy;
 
     [Header("Movement")]
@@ -29,6 +32,7 @@ public class Player : MonoBehaviour
     [Header("Gameplay")]
     public bool gameOver = false;
     public float score = 0;
+    public static int inputAmount;
 
     [Header("Identity")]
     public int id;
@@ -90,6 +94,7 @@ public class Player : MonoBehaviour
                 BallDistance();
                 EnemyDistance();
 
+
                 Fire();
                 //Change angle
                 Rotate();
@@ -123,10 +128,41 @@ public class Player : MonoBehaviour
         }
     }
 
+    private ArrayList NeuralInput()
+    {
+        //Organize data in array to sort the inputs
+        ArrayList input = new()
+        {
+            holdingBall,
+            xBallDistance,
+            yBallDistance,
+            zBallAngle,
+            power,
+            xEnemyDistance,
+            yEnemyDistance,
+            zEnemyAngle
+        };
+
+        //Change how many neurons exists in input layer
+        inputAmount = input.Count;
+        Controller.neuronsLayer[0] = inputAmount;
+
+        return input;
+    }
+
     private void BallDistance()
     {
-        xBallDistance = ball.transform.position.x - transform.position.x;
-        yBallDistance = ball.transform.position.y - transform.position.y;
+        if (holdingBall == 1)
+        {
+            xBallDistance = 0;
+            yBallDistance = 0;
+        }
+        else
+        {
+            xBallDistance = ball.transform.position.x - transform.position.x;
+            yBallDistance = ball.transform.position.y - transform.position.y;
+        }
+        zBallAngle = Utils.DistanceAngle(ball.transform, transform);
         power = ball.power;
     }
 
@@ -134,6 +170,7 @@ public class Player : MonoBehaviour
     {
         xEnemyDistance = enemy.transform.position.x - transform.position.x;
         yEnemyDistance = enemy.transform.position.y - transform.position.y;
+        zEnemyAngle = Utils.DistanceAngle(enemy.transform, transform);
     }
 
     private void Move()

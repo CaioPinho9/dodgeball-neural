@@ -24,6 +24,8 @@ public class NeuralNetwork
 
     public NeuralNetwork()
     {
+
+
         for (int i = 0; i < neuronsLayer.Length; i++)
         {
             layer[i] = new()
@@ -43,6 +45,25 @@ public class NeuralNetwork
         LinkLayers();
         //Show current dna in player
         dna = Copy();
+    }
+
+    public List<float> RunNetwork(ArrayList input)
+    {
+        //Reset outputs
+        Clear();
+        //Receive new information
+        Input(input);
+        //Calculate the next move
+        Forward();
+
+        //Get output from neurons in output layer
+        List<float> output = new();
+        foreach (Neuron neuron in layer[lastLayer - 1].neuron)
+        {
+            output.Add(neuron.output);
+        }
+        //Return to player
+        return output;
     }
 
     public string Copy()
@@ -206,11 +227,11 @@ public class NeuralNetwork
             else
             {
                 //Iterating the sensors
-                float[] sensors = (float[])input[inputIndex];
-                for (int sensorIndex = 0; sensorIndex < sensors.Length; sensorIndex++)
+                float[] array = (float[])input[inputIndex];
+                for (int arrayIndex = 0; arrayIndex < array.Length; arrayIndex++)
                 {
                     //A neuron in input layer receives an input value
-                    layer[0].neuron[totalIndex].output = sensors[sensorIndex];
+                    layer[0].neuron[totalIndex].output = array[arrayIndex];
                     totalIndex++;
                 }
             }
@@ -219,6 +240,7 @@ public class NeuralNetwork
 
     public void Forward()
     {
+        //Each layer
         for (int index = 0; index < layer.Length; index++)
         {
             layer[index].Forward(layer[index]);
@@ -269,25 +291,23 @@ public class Layer
     }
     public void Forward(Layer layer)
     {
+        //Input layer is always active
         if (layer.layerId > 0)
         {
             for (int index = 0; index < layer.neuron.Count; index++)
             {
-                //Debug.Log("ReLU");
-                //Debug.Log(layer.neuron[index].input);
+                //If input is greater than 0 the information is passed on
                 layer.neuron[index].output = layer.neuron[index].ReLU();
-                //Debug.Log(layer.neuron[index].output);
             }
         }
 
+        //Output layer isn't weighted
         if (layer.layerId < networkSize)
         {
             for (int index = 0; index < layer.link.Count; index++)
             {
-                //Debug.Log("Weight");
-                //Debug.Log(layer.link[index].neuron1.output);
+                //Each neuron is a sum of all neurons outputs in the last layer
                 layer.link[index].neuron2.input += layer.link[index].Weight();
-                //Debug.Log(layer.link[index].neuron2.input);
             }
         }
     }
@@ -323,6 +343,7 @@ public class Link
 
     public float Weight()
     {
+        //Weight and bias are used to manipulate the data
         return neuron1.output * weight + bias;
     }
 }
