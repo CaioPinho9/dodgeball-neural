@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -24,7 +23,7 @@ public class NetworkUI : MonoBehaviour
     public GameObject neuronCircle;
     private List<Neuron> neuronData = new();
     private List<Link> linkData = new();
-    private GameObject bestNetwork;
+    private Player bestNetwork;
     private Layer[] network;
 
     public Material material;
@@ -35,10 +34,17 @@ public class NetworkUI : MonoBehaviour
     private float time = 0;
     private readonly float queueTime = .5f;
 
+    private Camera cm;
+
 
     private void Start()
     {
         weightLimit = NeuralNetwork.weightLimit;
+    }
+
+    private void Awake()
+    {
+        cm = GameObject.Find("Main Camera").GetComponent<Camera>();
     }
 
     // Update is called once per frame
@@ -50,13 +56,13 @@ public class NetworkUI : MonoBehaviour
             {
                 int renderIndex = 0;
                 int linkIndex = 0;
-                foreach (Layer layer in bestNetwork.GetComponent<Player>().network.layer)
+                foreach (Layer layer in bestNetwork.network.layer)
                 {
                     foreach (Neuron neuron in layer.neuron)
                     {
                         if (neuron.output > 0)
                         {
-                            neuronData[renderIndex].render.GetComponentInChildren<SpriteRenderer>().color = new(1, 0, 0);
+                            neuronData[renderIndex].render.GetComponentInChildren<SpriteRenderer>().color = bestNetwork.network.team == 0 ? new(.3098f, .6352f, 1f) : new(1f, .3725f, .1215f);
                         }
                         else
                         {
@@ -67,13 +73,22 @@ public class NetworkUI : MonoBehaviour
                     }
                     foreach (Link link in layer.link)
                     {
+                        float width = Width(linkIndex) * cm.orthographicSize / 5;
+                        LineRenderer lr = linkData[linkIndex].render.GetComponent<LineRenderer>();
+                        lr.startWidth = width;
+                        lr.endWidth = width;
+
                         if (link.neuron1.output > 0)
                         {
-                            linkData[linkIndex].render.GetComponentInChildren<SpriteRenderer>().color = new(0, 0, 1);
+                            Color color = bestNetwork.network.team == 0 ? new(.0784f, .5882f, .8705f) : new(.9215f, .4117f, .1294f);
+                            lr.startColor = color;
+                            lr.endColor = color;
                         }
                         else
                         {
-                            linkData[linkIndex].render.GetComponentInChildren<SpriteRenderer>().color = new(0, 0, 0);
+                            Color color = new(0, 0, 0);
+                            lr.startColor = color;
+                            lr.endColor = color;
                         }
                         linkIndex++;
                     }
@@ -84,10 +99,10 @@ public class NetworkUI : MonoBehaviour
         }
     }
 
-    public void Build(GameObject bestNetwork)
+    public void Build(Player bestNetwork)
     {
         this.bestNetwork = bestNetwork;
-        network = bestNetwork.GetComponent<Player>().network.layer;
+        network = bestNetwork.network.layer;
 
         //Clear
         if (neuronData.Count > 0 && linkData.Count > 0)
@@ -96,15 +111,16 @@ public class NetworkUI : MonoBehaviour
             {
                 Destroy(neuron.render);
             }
-            GameObject[] links = GameObject.FindGameObjectsWithTag("Link");
-            foreach (GameObject link in links)
+            foreach (Link link in linkData)
             {
-                Destroy(link);
+                Destroy(link.render);
             }
         }
 
         neuronData = new();
         linkData = new();
+        cm.transform.GetComponent<CameraMovement>().width.Clear();
+        cm.transform.GetComponent<CameraMovement>().links.Clear();
 
         float x = startX;
         float y;
@@ -165,17 +181,16 @@ public class NetworkUI : MonoBehaviour
                 }
 
                 //Create neuron gameobject
-                neuron.render = DrawCircle(new Vector3(x, y, 0));
+                neuron.render = DrawCircle(new Vector3(x, y, 0), neuron.neuronId);
 
                 //Save neuron to use later
                 neuronData.Add(neuron);
 
                 //Red if activated
-                if (neuron.output > 0)
+                if (neuron.output > 0 || neuron.layer.layerId == 0)
                 {
                     neuron.render.GetComponentInChildren<SpriteRenderer>().color = Color.red;
                 }
-
             }
 
             //Links from layer
@@ -192,117 +207,59 @@ public class NetworkUI : MonoBehaviour
             built = true;
         }
 
-        /*
-        int nextLayerIndex = network[0].neuronCount;
-        for (int linkIndex = 0; linkIndex < network[0].link.Count; linkIndex++)
-        {
-            ArrayList colorWidth = ColorWidth(linkIndex);
-
-            if (linkIndex < 2)
-            {
-                linkData[linkIndex].render = DrawLine(neuronData[linkIndex].render.transform.position, neuronData[nextLayerIndex].render.transform.position, (Color)colorWidth[0], (float)colorWidth[1]);
-                nextLayerIndex++;
-            }
-            else
-            {
-                linkData[linkIndex].render = DrawLine(neuronData[linkIndex].render.transform.position, neuronData[nextLayerIndex].render.transform.position, (Color)colorWidth[0], (float)colorWidth[1]);
-                linkIndex++;
-                colorWidth = ColorWidth(linkIndex);
-                linkData[linkIndex].render = DrawLine(neuronData[linkIndex].render.transform.position, neuronData[nextLayerIndex].render.transform.position, (Color)colorWidth[0], (float)colorWidth[1]);
-                linkIndex++;
-                colorWidth = ColorWidth(linkIndex);
-                linkData[linkIndex].render = DrawLine(neuronData[linkIndex].render.transform.position, neuronData[nextLayerIndex].render.transform.position, (Color)colorWidth[0], (float)colorWidth[1]);
-                nextLayerIndex++;
-            }
-        }
-        */
-
         //Create links
         int index = 0;
-        foreach (Neuron neuron1 in neuronData)
+        cm.transform.GetComponent<CameraMovement>().width.Clear();
+        foreach (Link link in linkData)
         {
-            foreach (Neuron neuron2 in neuronData)
-            {
-                //Check if neuron2 is in the next layer
-                if (neuron1.layer.layerId == neuron2.layer.layerId - 1)
-                {
-                    /*
-                    Filling empty links
-                    if (index >= linkData.Count)
-                    {
-                        linkData.Add(new(neuron1, neuron1, Random.Range(-weightLimit, weightLimit), Random.Range(-weightLimit, weightLimit)));
-                    }
-                    */
-                    /*
-                    if (neuron1.layer.layerId == 0)
-                    {
-                        break;
-                    }
-                    */
+            float width = Width(index);
+            cm.transform.GetComponent<CameraMovement>().width.Add(width);
 
-                    ArrayList colorWidth = ColorWidth(index);
-
-                    //Save render object in the link
-                    linkData[index].render = DrawLine(neuron1.render.transform.position, neuron2.render.transform.position, (Color)colorWidth[0], (float)colorWidth[1]);
-                    index++;
-                }
-            }
+            //Save render object in the link
+            link.render = DrawLine(link.neuron1.render.transform, link.neuron2.render.transform, new(0, 0, 0), width, link.linkId);
+            index++;
         }
+        cm.transform.GetComponent<CameraMovement>().links = linkData;
     }
 
-    private ArrayList ColorWidth(int index)
+    private float Width(int index)
     {
         //Width is based on the weight of the link
         float weight = Mathf.Abs(linkData[index].weight / weightLimit);
         float width = 0.04f * weight;
         if (width < 0.02f) { width = 0.02f; }
 
-        //Color is based on how positive or negative the weight is
-        Color color;
-        if (linkData[index].weight < 0)
-        {
-            color = new(1, 1 - weight, 1 - weight, .8f);
-        }
-        else if (linkData[index].weight > 0)
-        {
-            color = new(1 - weight, 1 - weight, 1, .8f);
-        }
-        else
-        {
-            color = new(1, 1, 1, .8f);
-        }
-        ArrayList array = new()
-        {
-            color,
-            width
-        };
-        return array;
+        return width;
     }
 
-    private GameObject DrawLine(Vector3 start, Vector3 end, Color color, float width)
+    private GameObject DrawLine(Transform start, Transform end, Color color, float width, int linkId)
     {
-        GameObject myLine = new();
-        myLine.transform.position = start;
+        GameObject myLine = new() { name = "Link " + linkId.ToString() };
         myLine.AddComponent<LineRenderer>();
-        myLine.tag = "Link";
+        myLine.transform.parent = transform;
+        myLine.transform.localPosition = start.localPosition;
         LineRenderer lr = myLine.GetComponent<LineRenderer>();
-        lr.sortingOrder = 6;
+        lr.useWorldSpace = false;
+        lr.sortingOrder = 0;
+        lr.sortingLayerName = "UI";
         lr.material = new Material(material);
         lr.startColor = color;
         lr.endColor = color;
-        lr.startWidth = width;
-        lr.endWidth = width;
-        lr.SetPosition(0, start);
-        lr.SetPosition(1, end);
-        myLine.transform.parent = transform;
+        lr.startWidth = width *= cm.orthographicSize / 5;
+        lr.endWidth = width *= cm.orthographicSize / 5;
+        lr.SetPosition(0, Vector3.zero);
+        lr.SetPosition(1, end.position - start.position);
         return myLine;
     }
 
-    private GameObject DrawCircle(Vector3 position)
+    private GameObject DrawCircle(Vector3 position, int neuronId)
     {
         GameObject neuron = Instantiate(neuronCircle);
-        neuron.transform.position = position;
         neuron.transform.parent = transform;
+        neuron.transform.localPosition = position;
+        neuron.transform.localScale *= cm.orthographicSize / 5;
+        neuron.name = "Neuron " + neuronId.ToString();
+        neuron.transform.Find("Canvas").GetComponent<Canvas>().overrideSorting = true;
         return neuron;
     }
 }

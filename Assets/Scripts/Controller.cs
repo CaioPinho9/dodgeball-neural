@@ -8,36 +8,27 @@ public class Controller : MonoBehaviour
     [Header("Config")]
     public bool restart = false;
     public int gameAmount;
+    public int playerSurviveAmount;
+    public float randomAmount;
+
     public GameObject game;
+    public List<GameObject> games;
     private readonly float gameXSize = 10.5f;
     private readonly float gameYSize = 6.5f;
 
     [Header("Config Neural Network")]
-    //Neural Setting
-    public int[] neuronsLayerDebug = { 0, 7, 7 };
-    //Max value of weights and bias
-    public int weightLimitDebug = 500;
-    //Max value of mutation
-    public int mutateDebug = 1;
-    public float learningRateDebug = .1f;
 
     //Neural Setting
-    public static int[] neuronsLayer;
+    public int[] neuronsLayer;
     //Max value of weights and bias
-    public static int weightLimit;
+    public int weightLimit;
     //Max value of mutation
-    public static int mutate;
-    public static float learningRate;
+    public int mutate;
+    public float learningRate;
 
     // Start is called before the first frame update
-    void Start()
+    public void Begin()
     {
-        //Debug
-        neuronsLayer = neuronsLayerDebug;
-        weightLimit = weightLimitDebug;
-        mutate = mutateDebug;
-        learningRate = learningRateDebug;
-
         //Calculate the size of the game matrix
         int[] gameDimensions = GameAmount();
         int gameHeight = gameDimensions[0];
@@ -66,6 +57,7 @@ public class Controller : MonoBehaviour
             {
                 //Create game
                 GameObject instantiated = Instantiate(game);
+                games.Add(instantiated);
                 instantiated.transform.position = new((j + widthEven) * gameXSize, (-i - heightEven) * gameYSize);
                 instantiated.transform.SetParent(transform);
 
@@ -73,10 +65,10 @@ public class Controller : MonoBehaviour
                 foreach (Player player in instantiated.GetComponent<GameController>().players)
                 {
                     player.id += index * 2;
-                    player.name = player.id.ToString();
+                    player.name = "Player " + player.id.ToString();
                 }
                 //Rename game
-                instantiated.name = index.ToString();
+                instantiated.name = "Game " + index.ToString();
                 instantiated.transform.Find("Canvas").Find("Id").GetComponent<TMP_Text>().text = index.ToString();
                 index++;
             }
@@ -89,18 +81,12 @@ public class Controller : MonoBehaviour
         //Check if gameAmount was changed
         if (restart)
         {
-            //Debug
-            neuronsLayer = neuronsLayerDebug;
-            weightLimit = weightLimitDebug;
-            mutate = mutateDebug;
-            learningRate = learningRateDebug;
-
             //Destroy and recreate games
             foreach (GameObject game in GameObject.FindGameObjectsWithTag("Game"))
             {
                 Destroy(game);
             }
-            Start();
+            Begin();
             restart = false;
         }
     }

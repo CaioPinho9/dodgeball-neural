@@ -11,6 +11,7 @@ public class GameController : MonoBehaviour
 
     [Header("Control")]
     public bool gameOver = false;
+    private bool end = false;
     public bool restart = false;
     public bool manual = false;
 
@@ -40,23 +41,35 @@ public class GameController : MonoBehaviour
         }
 
         //When the max score is reached, the game stops and a sprite with the winner's color covers it
-        if (blueScore >= maxScore)
+        if (blueScore >= maxScore || orangeScore >= maxScore)
         {
             gameOver = true;
-            sp.color = new(.0784f, .5882f, .8705f);
-            sp.sortingOrder = 10;
         }
-        else if (orangeScore >= maxScore)
+
+        if (gameOver && !end)
         {
-            gameOver = true;
-            sp.color = new(.9215f, .4117f, .1294f);
-            sp.sortingOrder = 10;
+            players[0].gameOver = gameOver;
+            players[1].gameOver = gameOver;
+
+            if (blueScore >= orangeScore)
+            {
+                sp.color = new(.0784f, .5882f, .8705f);
+                sp.sortingOrder = 10;
+            }
+            else
+            {
+                sp.color = new(.9215f, .4117f, .1294f);
+                sp.sortingOrder = 10;
+            }
+
+            end = true;
         }
     }
 
     public void Restart()
     {
         gameOver = false;
+        end = false;
         orangeScore = 0;
         blueScore = 0;
         sp.color = new(1, 1, 1);

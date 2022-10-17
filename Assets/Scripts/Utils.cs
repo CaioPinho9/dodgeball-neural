@@ -11,7 +11,7 @@ public class Utils : MonoBehaviour
 
     public static float DistanceAngle(Transform target, Transform self)
     {
-        Vector3 targetDir = target.position - self.position;
+        Vector3 targetDir = target.localPosition - self.localPosition;
         targetDir = targetDir.normalized;
 
         float radians = self.eulerAngles.z * (Mathf.PI / 180);

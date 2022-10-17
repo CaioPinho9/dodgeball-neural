@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -12,17 +13,15 @@ public class Player : MonoBehaviour
     public float force = 5;
 
     [Header("Ball")]
-    public float xBallDistance;
-    public float yBallDistance;
-    public float zBallAngle;
-    public float power;
+    public float ballDistance;
+    public float ballAngle;
+    public float ballPower;
     public float holdingBall = 0;
     private Ball ball;
 
     [Header("Enemy")]
-    public float xEnemyDistance;
-    public float yEnemyDistance;
-    public float zEnemyAngle;
+    public float enemyDistance;
+    public float enemyAngle;
     private Player enemy;
 
     [Header("Movement")]
@@ -43,24 +42,38 @@ public class Player : MonoBehaviour
 
     [Header("Timer")]
     public float time;
-    public float queueTime = .1f;
+    public float queueTime = .5f;
+
+    //Sensor
+    [Header("Sensors")]
+    public float[] innerWallDistance = new float[4];
+    public float[] outerWallDistance = new float[7];
+    private readonly float sensorLenght = 20f;
+    private readonly float[] innerDegrees = { 0, 90, 180 };
+    private readonly float[] outerDegrees = { 0, 15, 30, 45 };
+    public LayerMask innerMask;
+    public LayerMask outerMask;
 
     //References
     public NeuralNetwork network;
     private Rigidbody2D rb;
-    private GameController gameController;
+    public GameController gameController;
+    private Controller controller;
 
     // Start is called before the first frame update
-    void Start()
+    public void Start()
     {
         rb = GetComponent<Rigidbody2D>();
         gameController = transform.parent.GetComponent<GameController>();
+        controller = GameObject.Find("Controller").GetComponent<Controller>();
         ball = gameController.ball;
         enemy = gameController.players[team == 0 ? 1 : 0];
         degrees = transform.eulerAngles.z;
+        innerWallDistance = Sensors(innerDegrees, innerMask);
+        outerWallDistance = Sensors(outerDegrees, outerMask);
         NeuralInput();
         //Create the neural network
-        network = new();
+        network = new(team);
 
         //Don't rotate without a command
         rb.freezeRotation = true;
@@ -94,20 +107,26 @@ public class Player : MonoBehaviour
             if (time > queueTime)
             {
                 Outside();
-
+                
                 BallDistance();
                 EnemyDistance();
 
-                RunNetwork();
+                if (!gameController.manual)
+                {
+                    RunNetwork();
+                }
 
                 Fire();
                 //Change angle
                 Rotate();
 
-                Move();
-
                 time = 0;
             }
+            Move();
+
+            innerWallDistance = Sensors(innerDegrees, innerMask);
+            outerWallDistance = Sensors(outerDegrees, outerMask);
+
             //Increases time and score
             time += Time.deltaTime;
         }
@@ -119,21 +138,21 @@ public class Player : MonoBehaviour
         {
             //Return to the field
             transform.localPosition = new(2.5f * (team == 0 ? 1 : -1), 0, 0);
-            score--;
+            score -= 20;
         }
 
-        if (team == 0 && transform.position.x < 0)
+        if (team == 0 && transform.localPosition.x < 0)
         {
             //Return to the field
             transform.localPosition = new(2.5f * (team == 0 ? 1 : -1), 0, 0);
-            score--;
+            score -= 20;
         }
 
-        if (team == 1 && transform.position.x > 0)
+        if (team == 1 && transform.localPosition.x > 0)
         {
             //Return to the field
             transform.localPosition = new(2.5f * (team == 0 ? 1 : -1), 0, 0);
-            score--;
+            score -= 20;
         }
     }
 
@@ -163,18 +182,31 @@ public class Player : MonoBehaviour
         ArrayList input = new()
         {
             holdingBall,
-            xBallDistance,
-            yBallDistance,
-            zBallAngle,
-            power,
-            xEnemyDistance,
-            yEnemyDistance,
-            zEnemyAngle
+            ballDistance,
+            ballAngle,
+            ballPower,
+            enemyDistance,
+            enemyAngle,
+            innerWallDistance,
+            outerWallDistance
         };
 
         //Change how many neurons exists in input layer
-        inputAmount = input.Count;
-        Controller.neuronsLayer[0] = inputAmount;
+        int totalIndex = 0;
+        for (int inputIndex = 0; inputIndex < input.Count; inputIndex++)
+        {
+            if (!input[inputIndex].GetType().IsArray)
+            {
+                totalIndex++;
+            }
+            else
+            {
+                //Iterating the sensors
+                float[] array = (float[])input[inputIndex];
+                totalIndex += array.Length;
+            }
+        }
+        controller.neuronsLayer[0] = totalIndex;
 
         return input;
     }
@@ -188,34 +220,112 @@ public class Player : MonoBehaviour
         shot = output[6] > 0 ? 1 : 0;
     }
 
+    private float[] Sensors(float[] sensorDegrees, LayerMask layerMask)
+    {
+        //Direction index has more indexs than sensorDegrees, because direction also has negative values
+        int directionIndex = 0;
+        int sensorSize = 0;
+        foreach (float i in sensorDegrees)
+        {
+            if (i == 0 || i == 180)
+            {
+                sensorSize++;
+            }
+            else
+            {
+                sensorSize += 2;
+            }
+        }
+        Vector3[] sensorDirection = new Vector3[sensorSize];
+
+
+        //Convert degrees in Vector2 direction
+        for (int i = 0; i < sensorDegrees.Length; i++)
+        {
+            //Degrees to radian, positive and zero
+            angle = (float)Math.PI * (sensorDegrees[i] + degrees) / 180;
+
+            //Zero doesn't have a negative value
+            if (sensorDegrees[i] == 0)
+            {
+                //Direction is a Vector2, with range between 0 and 1
+                sensorDirection[0] = new Vector3((float)Math.Cos(angle), (float)Math.Sin(angle), 0);
+                directionIndex++;
+            }
+            else if (sensorDegrees[i] == 180)
+            {
+                //Direction is a Vector2, with range between 0 and 1
+                sensorDirection[^1] = new Vector3((float)Math.Cos(angle), (float)Math.Sin(angle), 0);
+                directionIndex++;
+            }
+            else
+            {
+                //Direction is a Vector2, with range between 0 and 1
+                sensorDirection[directionIndex] = new Vector3((float)Math.Cos(angle), (float)Math.Sin(angle), 0);
+
+                //Degrees to radian, negative
+                angle = (float)Math.PI * (-sensorDegrees[i] + degrees) / 180;
+                sensorDirection[directionIndex + 1] = new Vector3((float)Math.Cos(angle), (float)Math.Sin(angle), 0);
+
+                //Index for positive and negative value
+                directionIndex += 2;
+
+            }
+        }
+
+        //Unity didn't allow global arrays
+        float[] distance = new float[sensorSize];
+
+        //Create a raycast
+        int sensorIndex = 0;
+        foreach (Vector3 direction in sensorDirection)
+        {
+            RaycastHit2D hit = Physics2D.Raycast(transform.position, direction, sensorLenght, ~layerMask);
+            if (hit.transform != null)
+            {
+                //Saving raycast hit position and object type
+                distance[sensorIndex] = Utils.Distance(hit.point.x, hit.point.y, transform.position.x, transform.position.y);
+
+                Debug.DrawLine(transform.position, hit.point);
+            }
+            else
+            {
+                distance[sensorIndex] = 0;
+            }
+
+            sensorIndex++;
+        }
+
+        //Global Output
+        return distance;
+    }
     private void BallDistance()
     {
         if (holdingBall == 1)
         {
-            xBallDistance = 0;
-            yBallDistance = 0;
+            ballDistance = 0;
+            ballAngle = 0;
         }
         else
         {
-            xBallDistance = ball.transform.position.x - transform.position.x;
-            yBallDistance = ball.transform.position.y - transform.position.y;
+            ballDistance = Utils.Distance(ball.transform.localPosition.x, ball.transform.localPosition.y, transform.localPosition.x, transform.localPosition.y);
+            ballAngle = Utils.DistanceAngle(ball.transform, transform);
         }
-        zBallAngle = Utils.DistanceAngle(ball.transform, transform);
-        power = ball.power;
+        ballPower = ball.power;
+        ballPower = (ballPower > 1) ? 1 : 0;
     }
 
     private void EnemyDistance()
     {
-        xEnemyDistance = enemy.transform.position.x - transform.position.x;
-        yEnemyDistance = enemy.transform.position.y - transform.position.y;
-        zEnemyAngle = Utils.DistanceAngle(enemy.transform, transform);
+        enemyDistance = Utils.Distance(enemy.transform.localPosition.x, enemy.transform.localPosition.y, transform.localPosition.x, transform.localPosition.y);
+        enemyAngle = Utils.DistanceAngle(enemy.transform, transform);
     }
 
     private void Move()
     {
         //Move
-        transform.position += 10f * accelerate * Time.deltaTime * transform.right;
-        transform.position += 10f * lateral * Time.deltaTime * transform.up;
+        transform.localPosition += 2f * accelerate * Time.deltaTime * transform.right;
+        transform.localPosition += 2f * lateral * Time.deltaTime * transform.up;
         
         //Ball fixed
         if (transform.childCount > 0)
@@ -239,6 +349,7 @@ public class Player : MonoBehaviour
         if (shot == 1 && holdingBall == 1)
         {
             holdingBall = 0;
+            ball.hold = false;
 
             //Limit force
             if (force >= 10)
@@ -254,7 +365,7 @@ public class Player : MonoBehaviour
             ball.speed = force;
 
             //Send this player to ball
-            ball.shooter = transform.gameObject;
+            ball.shooter = GetComponent<Player>();
 
             //Remove ball from player
             ball.transform.parent = transform.parent;
@@ -271,7 +382,7 @@ public class Player : MonoBehaviour
         if (collision.transform.CompareTag("Ball"))
         {
             //Power greater than 0 is impossible to hold
-            if (ball.power <= 0)
+            if (ball.power == 0)
             {
                 //Disable collider
                 ball.transform.GetComponent<CircleCollider2D>().enabled = false;
@@ -281,8 +392,10 @@ public class Player : MonoBehaviour
 
                 //Holds the ball
                 ball.transform.parent = transform;
+                ball.hold = true;
                 ball.transform.localPosition = new(1.5f, 0, 0);
                 holdingBall = 1;
+                score++;
 
                 //Which team is holding
                 ball.team = team;
@@ -293,7 +406,7 @@ public class Player : MonoBehaviour
             else if (ball.team != team)
             {
                 //If player is hit when power is greater than 0, the scores decreases
-                score -= 1;
+                score -= 40;
             }
         }
     }

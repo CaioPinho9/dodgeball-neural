@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 3123167211524934468}
   - component: {fileID: 3123167211524934469}
+  - component: {fileID: 4597140272660371665}
   m_Layer: 0
   m_Name: Controller
   m_TagString: Untagged
@@ -44,5 +45,31 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0d8454020a75d15498210065b5be7d8b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gameCount: 5
+  restart: 0
+  gameAmount: 300
   game: {fileID: 6682835355944005202, guid: d08bfc2390c616e499c62ed70cb529ed, type: 3}
+  neuronsLayerDebug: 000000000700000007000000
+  weightLimitDebug: 500
+  mutateDebug: 1
+  learningRateDebug: 0.1
+--- !u!114 &4597140272660371665
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3123167211524934490}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 945ef0a0b0af4914992017930dd0571a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  playerAmount: 0
+  playerSurviveAmount: 0
+  randomAmount: 0
+  playerAlive: 0
+  bestPlayer: {fileID: 0}
+  bestPlayers: []
+  players: []
+  time: 0
+  queueTime: 2

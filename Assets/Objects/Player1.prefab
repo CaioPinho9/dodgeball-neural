@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: -4410958740876744150}
   - component: {fileID: 1528657017722382262}
   - component: {fileID: 5103116429394723711}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Player1
   m_TagString: Player
   m_Icon: {fileID: 0}
@@ -52,12 +52,12 @@ MonoBehaviour:
   lateral: 0
   shot: 0
   force: 5
-  xBallDistance: 0
-  yBallDistance: 0
-  power: 0
+  ballDistance: 0
+  ballAngle: 0
+  ballPower: 0
   holdingBall: 0
-  xEnemyDistance: 0
-  yEnemyDistance: 0
+  enemyDistance: 0
+  enemyAngle: 0
   speed: 2
   degrees: 0
   angle: 0
@@ -69,6 +69,26 @@ MonoBehaviour:
   team: 0
   time: 0
   queueTime: 0.1
+  innerWallDistance:
+  - 0
+  - 0
+  - 0
+  - 0
+  outerWallDistance:
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  innerMask:
+    serializedVersion: 2
+    m_Bits: 0
+  outerMask:
+    serializedVersion: 2
+    m_Bits: 0
+  gameController: {fileID: 0}
 --- !u!58 &-4410958740876744150
 CircleCollider2D:
   m_ObjectHideFlags: 0
@@ -125,7 +145,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 1
+  m_SortingOrder: 2
   m_Sprite: {fileID: 21300000, guid: 5e13b77ee0d863c408c7fc1a31735dd4, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0

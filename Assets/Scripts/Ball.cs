@@ -1,5 +1,5 @@
+using System;
 using TMPro;
-using UnityEditor.Timeline.Actions;
 using UnityEngine;
 
 public class Ball : MonoBehaviour
@@ -14,7 +14,7 @@ public class Ball : MonoBehaviour
 
     [Header("Team")]
     public int team;
-    public GameObject shooter;
+    public Player shooter;
 
     private Rigidbody2D rb;
     private Animator anim;
@@ -22,6 +22,14 @@ public class Ball : MonoBehaviour
 
     // Start is called before the first frame update
     void Start()
+    {
+        rb = GetComponent<Rigidbody2D>();
+        anim = GetComponent<Animator>();
+        gameController = transform.parent.GetComponent<GameController>();
+        rb.freezeRotation = true;
+    }
+
+    void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
         anim = GetComponent<Animator>();
@@ -50,7 +58,7 @@ public class Ball : MonoBehaviour
         }
 
         //Check if ball is not inside the field
-        if (!gameController.GetComponentInChildren<BoxCollider>().bounds.Contains(transform.position))
+        if (!hold && Math.Abs(transform.localPosition.x) > 5.1 || Math.Abs(transform.localPosition.y) > 3.1)
         {
             //Return to the field
             transform.localPosition = Vector3.zero;
@@ -61,14 +69,8 @@ public class Ball : MonoBehaviour
     {
         if (!gameOver && !(collision.collider.CompareTag("Player") && team == collision.collider.GetComponent<Player>().team && power == 3))
         {
-            //Reduce power when collide
-            power -= 1;
-            anim.SetInteger("power", power);
-            speed *= .8f;
-
-            //Check if the collision is vertical or horizontal
             Vector3 collisionPoint = collision.GetContact(0).point;
-            if (Utils.Distance(collisionPoint.x, 0, transform.position.x, 0) < Utils.Distance(0, collisionPoint.y, 0, transform.position.y))
+            if (Utils.Distance(collisionPoint.x, 0, transform.position.x, 0) <= Utils.Distance(0, collisionPoint.y, 0, transform.position.y))
             {
                 transform.eulerAngles *= -1;
             }
@@ -77,9 +79,17 @@ public class Ball : MonoBehaviour
                 transform.eulerAngles = new(0, 0, 180 - transform.eulerAngles.z);
             }
 
-            if (collision.collider.CompareTag("Player") && team != collision.collider.GetComponent<Player>().team && power >= 1)
+            //Reduce power when collide
+            if (power > 0)
             {
-                shooter.GetComponent<Player>().score++;
+                power--;
+            }
+            anim.SetInteger("power", power);
+            speed *= .8f;
+
+            if (collision.collider.CompareTag("Player") && team != collision.collider.GetComponent<Player>().team && power > 1)
+            {
+                shooter.score += 30;
                 Transform canvas = transform.parent.Find("Canvas");
                 if (collision.collider.GetComponent<Player>().team == 0)
                 {
